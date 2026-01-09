@@ -5,7 +5,6 @@ __pycache__/
 *.db
 *.log
 *.sqlite3
-.env
 .gitignore
 .DS_Store
 .git
