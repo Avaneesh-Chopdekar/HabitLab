@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import PagerView from "react-native-pager-view";
 import IBaseline from "../../types/IBaseline";
@@ -7,7 +7,6 @@ import Onboarding2 from "./Onboarding2";
 import Onboarding3 from "./Onboarding3";
 import Onboarding4 from "./Onboarding4";
 import Onboarding5 from "./Onboarding5";
-import Onboarding6 from "./Onboarding6";
 
 interface OnboardingProps {}
 
@@ -57,9 +56,6 @@ export default function Onboarding(props: OnboardingProps) {
       </View>
       <View key="5" style={styles.page}>
         <Onboarding5 pagerRef={pagerRef} /> {/* Create Account */}
-      </View>
-      <View key="6" style={styles.page}>
-        <Onboarding6 pagerRef={pagerRef} /> {/* OTP Verification */}
       </View>
     </PagerView>
   );

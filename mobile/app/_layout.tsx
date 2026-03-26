@@ -7,6 +7,10 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="login"
+          options={{ presentation: "modal", headerTitle: "Login" }}
+        />
       </Stack>
     </>
   );
