@@ -2,18 +2,14 @@ import React from "react";
 import { View, Text, Pressable } from "react-native";
 import Slider from "@react-native-community/slider";
 import IBaseline from "../../types/IBaseline";
+import { useOnboardingStore } from "@/store/onboarding";
 
 interface Onboarding3Props {
-  baseline: IBaseline;
-  setBaseline: React.Dispatch<React.SetStateAction<IBaseline>>;
   pagerRef: React.RefObject<any>;
 }
 
-export default function Onboarding3({
-  baseline,
-  setBaseline,
-  pagerRef,
-}: Onboarding3Props) {
+export default function Onboarding3({ pagerRef }: Onboarding3Props) {
+  const { baseline, setBaseline } = useOnboardingStore();
   return (
     <>
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 32 }}>
@@ -37,9 +33,7 @@ export default function Onboarding3({
           maximumTrackTintColor="blue"
           minimumTrackTintColor="blue"
           value={baseline.sleepQualityScore}
-          onValueChange={(value) =>
-            setBaseline({ ...baseline, sleepQualityScore: value })
-          }
+          onValueChange={(value) => setBaseline({ sleepQualityScore: value })}
           minimumValue={0}
           maximumValue={10}
           step={1}
@@ -53,9 +47,7 @@ export default function Onboarding3({
           maximumTrackTintColor="hotpink"
           minimumTrackTintColor="hotpink"
           value={baseline.focusScore}
-          onValueChange={(value) =>
-            setBaseline({ ...baseline, focusScore: value })
-          }
+          onValueChange={(value) => setBaseline({ focusScore: value })}
           minimumValue={0}
           maximumValue={10}
           step={1}
@@ -69,9 +61,7 @@ export default function Onboarding3({
           maximumTrackTintColor="orange"
           minimumTrackTintColor="orange"
           value={baseline.moodScore}
-          onValueChange={(value) =>
-            setBaseline({ ...baseline, moodScore: value })
-          }
+          onValueChange={(value) => setBaseline({ moodScore: value })}
           minimumValue={0}
           maximumValue={10}
           step={1}
@@ -85,9 +75,21 @@ export default function Onboarding3({
           maximumTrackTintColor="green"
           minimumTrackTintColor="green"
           value={baseline.phoneHours}
-          onValueChange={(value) =>
-            setBaseline({ ...baseline, phoneHours: value })
-          }
+          onValueChange={(value) => setBaseline({ phoneHours: value })}
+          minimumValue={0}
+          maximumValue={10}
+          step={1}
+          style={{ width: "100%", height: 60 }}
+        />
+        <Text style={{ fontSize: 16, color: "teal", marginLeft: 16 }}>
+          Confidence ({baseline.confidenceScore})
+        </Text>
+        <Slider
+          value={baseline.confidenceScore}
+          onValueChange={(v) => setBaseline({ confidenceScore: v })}
+          thumbTintColor="teal"
+          maximumTrackTintColor="teal"
+          minimumTrackTintColor="teal"
           minimumValue={0}
           maximumValue={10}
           step={1}
@@ -101,9 +103,7 @@ export default function Onboarding3({
           maximumTrackTintColor="rebeccapurple"
           minimumTrackTintColor="rebeccapurple"
           value={baseline.exerciseScore}
-          onValueChange={(value) =>
-            setBaseline({ ...baseline, exerciseScore: value })
-          }
+          onValueChange={(value) => setBaseline({ exerciseScore: value })}
           minimumValue={0}
           maximumValue={10}
           step={1}

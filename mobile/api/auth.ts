@@ -94,3 +94,12 @@ export const googleLogin = async (data: GoogleLoginRequest) => {
     return { ok: false, error: "Google login failed" };
   }
 };
+
+export const getMe = async () => {
+  try {
+    const res = await api.get("/api/auth/me/");
+    return { ok: true, data: res.data };
+  } catch (err: any) {
+    return { ok: false, error: "Failed to fetch user" };
+  }
+};

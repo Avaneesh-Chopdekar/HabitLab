@@ -1,14 +1,17 @@
-from datetime import timezone
-
+from django.utils import timezone
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from experiments.models import Baseline
+
 from .google import verify_google_token
-from .helper import issue_jwt, generate_otp, send_otp_email
-from .models import User, EmailOTP
+from .helper import generate_otp, issue_jwt, send_otp_email
+from .models import EmailOTP, User
 from .serializers import RegisterSerializer
 from .tokens import MyTokenSerializer
+
 
 class RegisterView(APIView):
     def post(self, request):
@@ -26,8 +29,10 @@ class RegisterView(APIView):
 
         return Response({"message": "OTP sent to email"})
 
+
 class LoginView(TokenObtainPairView):
     serializer_class = MyTokenSerializer
+
 
 class GoogleLogin(APIView):
     def post(self, request):
@@ -51,12 +56,11 @@ class GoogleLogin(APIView):
 
         # Case 3: New user
         user = User.objects.create(
-            email=email,
-            username=email.split("@")[0],
-            google_sub=google_sub
+            email=email, username=email.split("@")[0], google_sub=google_sub
         )
 
         return issue_jwt(user)
+
 
 class VerifyOTP(APIView):
     def post(self, request):
@@ -75,9 +79,23 @@ class VerifyOTP(APIView):
 
         user.is_verified = True
         user.save()
+
+        Baseline.objects.get_or_create(
+            user=user,
+            defaults={
+                "sleep_score": 0,
+                "mood_score": 0,
+                "focus_score": 0,
+                "phone_hours": 0,
+                "exercise_score": 0,
+                "confidence_score": 0,
+            },
+        )
+
         otp.delete()
 
         return issue_jwt(user)
+
 
 class ResendOTP(APIView):
     def post(self, request):
@@ -89,10 +107,7 @@ class ResendOTP(APIView):
         if last:
             diff = (timezone.now() - last.created_at).seconds
             if diff < 60:
-                return Response(
-                    {"error": f"Wait {60-diff} seconds"},
-                    status=400
-                )
+                return Response({"error": f"Wait {60 - diff} seconds"}, status=400)
 
         EmailOTP.objects.filter(user=user).delete()
 
@@ -101,3 +116,19 @@ class ResendOTP(APIView):
         send_otp_email(user.email, otp)
 
         return Response({"message": "OTP resent"})
+
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        return Response(
+            {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+                "is_verified": user.is_verified,
+            }
+        )

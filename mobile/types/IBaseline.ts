@@ -4,4 +4,5 @@ export default interface IBaseline {
   moodScore: number;
   phoneHours: number;
   exerciseScore: number;
+  confidenceScore: number;
 }

@@ -56,10 +56,12 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_yasg",
     "accounts",
+    "experiments",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+TESTING_MODE = os.getenv("TESTING_MODE", "False") == "True"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

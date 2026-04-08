@@ -26,7 +26,15 @@ import {
   type VerifyOtpRequest,
 } from "@/types/auth";
 
-import { login, register, verifyOtp, resendOtp } from "@/api/auth";
+import { useAuthStore } from "@/store/auth";
+import { useOnboardingStore } from "@/store/onboarding";
+import { useExperimentStore } from "@/store/experiment";
+import {
+  startExperiment,
+  updateBaseline,
+  getCurrentExperiment,
+} from "@/api/experiments";
+import { getMe } from "@/api/auth";
 
 interface Onboarding5Props {
   pagerRef: React.RefObject<any>;
@@ -36,10 +44,11 @@ interface Onboarding5Props {
 
 export default function Onboarding5({ pagerRef }: Onboarding5Props) {
   const [mode, setMode] = useState<"login" | "signup" | "otp">("login");
-  const [loading, setLoading] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [emailForOtp, setEmailForOtp] = useState("");
+
+  const { login, register, verifyOtp, resendOtp, isLoading } = useAuthStore();
+  const { baseline, experiment, reset } = useOnboardingStore();
 
   // Forms
   const loginForm = useForm<LoginRequest>({
@@ -60,48 +69,141 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
   // Handlers
   const handleLogin: SubmitHandler<LoginRequest> = async (data) => {
     setServerMessage(null);
-    setLoading(true);
+
+    const { fetchCurrent } = useExperimentStore.getState();
+
     try {
-      console.log("API URL:", process.env.EXPO_PUBLIC_API_URL);
-      await login(data);
-      pagerRef.current?.setPage(5);
+      const res = await login(data);
+
+      if (res.success) {
+        // ✅ Always sync experiment from backend
+        await fetchCurrent();
+
+        const { current } = useExperimentStore.getState();
+        const hasActiveExperiment = !!current;
+
+        // ✅ Only create if none exists
+        if (!hasActiveExperiment && experiment) {
+          // Save baseline
+          await updateBaseline({
+            sleep_score: baseline.sleepQualityScore,
+            focus_score: baseline.focusScore,
+            mood_score: baseline.moodScore,
+            phone_hours: baseline.phoneHours,
+            exercise_score: baseline.exerciseScore,
+            confidence_score: baseline.confidenceScore,
+          });
+
+          // Create experiment
+          const startRes = await startExperiment({
+            title: experiment,
+            duration_days: 7,
+          });
+
+          if (!startRes.ok) {
+            console.log("Experiment creation failed:", startRes.error);
+          }
+
+          const me = await getMe();
+          const userId = me.data.id;
+
+          useOnboardingStore.persist.setOptions({
+            name: `onboarding-storage-${userId}`,
+          });
+
+          await useOnboardingStore.persist.rehydrate();
+
+          // 🔥 Refetch after creation
+          await fetchCurrent();
+        }
+
+        pagerRef.current?.setPage(5);
+        reset();
+      } else {
+        setServerMessage(res.error || "Login failed, Please try again.");
+      }
     } catch (err: any) {
       setServerMessage(err?.message ?? "Login failed. Please try again.");
-      console.log(err.message); // "Network Error"
-      console.log(err.response); // ❌ undefined
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSignup: SubmitHandler<RegisterRequest> = async (data) => {
     setServerMessage(null);
-    setLoading(true);
     try {
-      await register(data);
-      setEmailForOtp(data.email);
-      otpForm.setValue("email", data.email);
-      setMode("otp");
-      setServerMessage("Verification code sent to your email.");
+      const res = await register(data);
+
+      if (res.success) {
+        setEmailForOtp(data.email);
+        otpForm.setValue("email", data.email);
+        setMode("otp");
+        setServerMessage("Verification code sent to your email.");
+      } else {
+        setServerMessage(res.error || "Signup failed");
+      }
     } catch (err: any) {
       setServerMessage(err?.message ?? "Signup failed. Please try again.");
     } finally {
-      setLoading(false);
     }
   };
 
   const handleVerifyOtp: SubmitHandler<VerifyOtpRequest> = async (data) => {
     setServerMessage(null);
-    setOtpLoading(true);
+
+    const { fetchCurrent } = useExperimentStore.getState();
+
     try {
-      await verifyOtp(data);
-      pagerRef.current?.setPage(5);
+      const res = await verifyOtp(data);
+
+      if (res.success) {
+        // ✅ Sync experiment
+        await fetchCurrent();
+
+        const { current } = useExperimentStore.getState();
+        const hasActiveExperiment = !!current;
+
+        if (!hasActiveExperiment && experiment) {
+          await updateBaseline({
+            sleep_score: baseline.sleepQualityScore,
+            focus_score: baseline.focusScore,
+            mood_score: baseline.moodScore,
+            phone_hours: baseline.phoneHours,
+            exercise_score: baseline.exerciseScore,
+            confidence_score: baseline.confidenceScore,
+          });
+
+          const startRes = await startExperiment({
+            title: experiment,
+            duration_days: 7,
+          });
+
+          if (!startRes.ok) {
+            console.log("Experiment creation failed:", startRes.error);
+          }
+
+          const me = await getMe();
+          const userId = me.data.id;
+
+          useOnboardingStore.persist.setOptions({
+            name: `onboarding-storage-${userId}`,
+          });
+
+          await useOnboardingStore.persist.rehydrate();
+
+          useOnboardingStore.getState().reset();
+
+          // 🔥 Refetch again
+          await fetchCurrent();
+        }
+
+        pagerRef.current?.setPage(5);
+        reset();
+      } else {
+        setServerMessage(res.error || "Invalid OTP");
+      }
     } catch (err: any) {
       setServerMessage(
         err?.message ?? "Verification failed. Please try again.",
       );
-    } finally {
-      setOtpLoading(false);
     }
   };
 
@@ -111,14 +213,17 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
       return;
     }
     setServerMessage(null);
-    setOtpLoading(true);
     try {
-      await resendOtp({ email: emailForOtp });
-      setServerMessage("OTP resent. Check your email.");
+      const res = await resendOtp({ email: emailForOtp });
+
+      if (res.success) {
+        setServerMessage("OTP resent. Check your email.");
+      } else {
+        setServerMessage(res.error || "Failed to resend OTP.");
+      }
     } catch (err: any) {
       setServerMessage(err?.message ?? "Failed to resend OTP.");
     } finally {
-      setOtpLoading(false);
     }
   };
 
@@ -272,7 +377,7 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
               <AuthButtons
                 primaryLabel="Sign In"
                 onPrimaryPress={loginForm.handleSubmit(handleLogin)}
-                primaryLoading={loading}
+                primaryLoading={isLoading}
                 secondaryLabel="Continue with Google"
                 onSecondaryPress={handleGoogle}
                 secondaryIconName="login"
@@ -314,7 +419,7 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
               <AuthButtons
                 primaryLabel="Create Account"
                 onPrimaryPress={signupForm.handleSubmit(handleSignup)}
-                primaryLoading={loading}
+                primaryLoading={isLoading}
                 secondaryLabel="Continue with Google"
                 onSecondaryPress={handleGoogle}
                 secondaryIconName="login"
@@ -339,12 +444,12 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
               <AuthButtons
                 primaryLabel="Verify"
                 onPrimaryPress={otpForm.handleSubmit(handleVerifyOtp)}
-                primaryLoading={otpLoading}
+                primaryLoading={isLoading}
                 showDivider={false}
               />
 
               <View style={onboardingStyles.resendContainer}>
-                <Pressable onPress={handleResend} disabled={otpLoading}>
+                <Pressable onPress={handleResend} disabled={isLoading}>
                   <Text style={onboardingStyles.resendText}>
                     Didn&apos;t receive a code?{" "}
                     <Text style={onboardingStyles.resendLink}>Resend OTP</Text>

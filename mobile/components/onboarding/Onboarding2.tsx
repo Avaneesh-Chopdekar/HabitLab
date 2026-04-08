@@ -1,18 +1,14 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
+import { useOnboardingStore } from "@/store/onboarding";
 
 interface Onboarding2Props {
-  selectedProblems: string[];
-  setSelectedProblems: React.Dispatch<React.SetStateAction<string[]>>;
   pagerRef: React.RefObject<any>;
 }
 
-export default function Onboarding2({
-  selectedProblems,
-  setSelectedProblems,
-  pagerRef,
-}: Onboarding2Props) {
+export default function Onboarding2({ pagerRef }: Onboarding2Props) {
+  const { selectedProblems, setSelectedProblems } = useOnboardingStore();
   return (
     <>
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 32 }}>
