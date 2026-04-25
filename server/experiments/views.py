@@ -93,25 +93,23 @@ class ToggleExperimentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        exp = UserExperiment.objects.filter(user=request.user, status="active").first()
+        exp = UserExperiment.objects.filter(
+            user=request.user, status__in=["active", "paused"]
+        ).first()
 
         if not exp:
-            exp = UserExperiment.objects.filter(
-                user=request.user, status="paused"
-            ).first()
+            return Response(
+                api_response(False, error="No experiment found"), status=404
+            )
 
-            if not exp:
-                return Response(
-                    api_response(False, error="No experiment found"), status=404
-                )
-
+        if exp.status == "active":
+            exp.status = "paused"
+        else:
             exp.status = "active"
-            exp.save()
-            return Response(api_response(True, {"status": "resumed"}))
 
-        exp.status = "paused"
         exp.save()
-        return Response(api_response(True, {"status": "paused"}))
+
+        return Response(api_response(True, {"status": exp.status}))
 
 
 class DailyCheckinView(APIView):
@@ -295,6 +293,7 @@ class CurrentExperimentView(APIView):
                     "difficulty": exp.difficulty,
                     "baseline": exp.baseline_snapshot,
                     "sub_experiments": sub_experiments,
+                    "status": exp.status,
                 },
             )
         )
@@ -343,17 +342,22 @@ class RestartExperimentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        exp = UserExperiment.objects.filter(user=request.user, status="active").first()
+        exp = UserExperiment.objects.filter(
+            user=request.user, status__in=["active", "paused"]
+        ).first()
 
         if not exp:
-            return Response(api_response(False, error="No active experiment"))
+            return Response(
+                api_response(False, error="No experiment found"), status=404
+            )
 
         exp.start_date = timezone.now().date()
         exp.last_checkin_at = None
         exp.status = "active"
-        exp.save()
 
         exp.checkins.all().delete()
+
+        exp.save()
 
         return Response(api_response(True, {"reset": True}))
 

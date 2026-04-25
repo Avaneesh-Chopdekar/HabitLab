@@ -9,10 +9,13 @@ import {
   ScrollView,
 } from "react-native";
 import Slider from "@react-native-community/slider";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 
 import { useAuthStore } from "@/store/auth";
 import { useExperimentStore } from "@/store/experiment";
 import { useOnboardingStore } from "@/store/onboarding";
+import { useHealthStore } from "@/store/health";
 
 import {
   updateBaseline,
@@ -21,62 +24,47 @@ import {
 } from "@/api/experiments";
 
 import SourceToggle from "@/components/SourceToggle";
-import { useHealthStore } from "@/store/health";
-
-import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+
+const C = {
+  primary: "#6366f1",
+  bg: "#f8f9ff",
+  surface: "#ffffff",
+  border: "#e2e8f0",
+  text: "#1e293b",
+  muted: "#64748b",
+  success: "#10b981",
+};
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const { clear } = useExperimentStore();
 
-  const [baseline, setBaseline] = useState<any>(null);
-  const [loadingBaseline, setLoadingBaseline] = useState(true);
-
   const { sleepSource, exerciseSource, setSleepSource, setExerciseSource } =
     useHealthStore();
 
+  const [baseline, setBaseline] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({ total: 0, completed: 0 });
+
   useEffect(() => {
-    const loadBaseline = async () => {
-      try {
-        const res = await getBaseline();
+    (async () => {
+      const res = await getBaseline();
+      if (res.ok) setBaseline(res.data);
 
-        if (res.ok) {
-          setBaseline(res.data);
-        } else {
-          Alert.alert("Error", res.error);
-        }
-      } catch (err) {
-        Alert.alert("Error", "Failed to load baseline");
-      } finally {
-        setLoadingBaseline(false);
-      }
-    };
-
-    loadBaseline();
-  }, []);
-
-  const [stats, setStats] = useState({
-    total: 0,
-    completed: 0,
-  });
-
-  // ✅ FETCH STATS
-  useEffect(() => {
-    const loadStats = async () => {
-      const res = await getAllExperiments();
-      if (res.ok) {
-        const total = res.data.length;
-        const completed = res.data.filter(
+      const exp = await getAllExperiments();
+      if (exp.ok) {
+        const total = exp.data.length;
+        const completed = exp.data.filter(
           (e: any) => e.status === "completed",
         ).length;
-
         setStats({ total, completed });
       }
-    };
 
-    loadStats();
+      setLoading(false);
+    })();
   }, []);
 
   async function handleLogout() {
@@ -88,60 +76,67 @@ export default function ProfileScreen() {
   }
 
   const SliderRow = (label: string, key: string, max = 10) => (
-    <View style={{ marginBottom: 14 }}>
-      <Text style={{ fontSize: 13 }}>
-        {label} ({Math.round(baseline[key])})
-      </Text>
+    <View style={{ marginBottom: 18 }}>
+      <View style={styles.sliderHeader}>
+        <Text style={styles.sliderLabel}>{label}</Text>
+        <Text style={styles.sliderValue}>{Math.round(baseline[key])}</Text>
+      </View>
 
       <Slider
-        value={Math.round(baseline[key])}
+        value={baseline[key]}
         onValueChange={(v) =>
-          setBaseline((prev: any) => ({
-            ...prev,
-            [key]: v,
-          }))
+          setBaseline((prev: any) => ({ ...prev, [key]: v }))
         }
         minimumValue={0}
         maximumValue={max}
+        thumbTintColor={C.primary}
+        maximumTrackTintColor={C.muted}
         step={1}
+        minimumTrackTintColor={C.primary}
       />
     </View>
   );
 
-  if (loadingBaseline || !baseline) {
+  if (loading || !baseline) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator size="large" color={C.primary} />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* 👤 PROFILE */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>👤 Profile</Text>
-
-          <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>{user?.email}</Text>
-
-          <Text style={styles.label}>Username</Text>
-          <Text style={styles.value}>{user?.username}</Text>
+          <View style={styles.row}>
+            <View style={styles.avatar}>
+              <Feather name="user" size={22} color={C.primary} />
+            </View>
+            <View>
+              <Text style={styles.name}>{user?.username}</Text>
+              <Text style={styles.email}>{user?.email}</Text>
+            </View>
+          </View>
         </View>
 
         {/* 📊 STATS */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>📊 Your Stats</Text>
+          <Text style={styles.sectionTitle}>📊 Your Progress</Text>
 
-          <Text style={styles.value}>Experiments: {stats.total}</Text>
-
-          <Text style={styles.value}>Completed: {stats.completed} ✅</Text>
+          <View style={styles.statsRow}>
+            <Stat label="Experiments" value={stats.total} />
+            <Stat label="Completed" value={stats.completed} />
+          </View>
         </View>
 
         {/* ⚙️ BASELINE */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>⚙️ Your Baseline</Text>
+          <Text style={styles.sectionTitle}>⚙️ Baseline</Text>
+          <Text style={styles.meta}>
+            Your starting point for measuring improvement
+          </Text>
 
           {SliderRow("Sleep", "sleep_score")}
           {SliderRow("Focus", "focus_score")}
@@ -151,49 +146,45 @@ export default function ProfileScreen() {
           {SliderRow("Confidence", "confidence_score")}
 
           <Pressable
-            style={styles.button}
+            style={styles.saveBtn}
             onPress={async () => {
               const res = await updateBaseline(baseline);
               if (res.ok) {
                 Alert.alert("Saved", "Baseline updated ✅");
-                const fresh = await getBaseline();
-                if (fresh.ok) setBaseline(fresh.data);
               } else {
                 Alert.alert("Error", res.error);
               }
             }}
           >
-            <Text style={styles.buttonText}>Save Baseline</Text>
+            <Text style={styles.saveText}>Save Changes</Text>
           </Pressable>
         </View>
 
-        <Text
-          style={{
-            fontSize: 12,
-            color: "#888",
-            marginTop: -10,
-            marginBottom: 10,
-          }}
-        >
-          Use Health Connect data automatically or enter manually
-        </Text>
+        {/* 🔗 DATA SOURCE */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>🔗 Data Sources</Text>
+          <Text style={styles.meta}>
+            Choose between manual input or Health Connect
+          </Text>
 
-        <SourceToggle
-          label="Sleep Data Source"
-          value={sleepSource}
-          onChange={setSleepSource}
-        />
+          <SourceToggle
+            label="Sleep"
+            value={sleepSource}
+            onChange={setSleepSource}
+          />
+          <SourceToggle
+            label="Exercise"
+            value={exerciseSource}
+            onChange={setExerciseSource}
+          />
+        </View>
 
-        <SourceToggle
-          label="Exercise Data Source"
-          value={exerciseSource}
-          onChange={setExerciseSource}
-        />
-
-        {/* 🧠 AI COACH */}
+        {/* 🧠 AI */}
         <Pressable style={styles.card} onPress={() => router.push("/ai-coach")}>
           <Text style={styles.sectionTitle}>🧠 AI Coach</Text>
-          <Text style={styles.meta}>Get personalized habit suggestions →</Text>
+          <Text style={styles.meta}>
+            Get smart suggestions to improve your habits →
+          </Text>
         </Pressable>
 
         {/* 🚪 LOGOUT */}
@@ -205,79 +196,96 @@ export default function ProfileScreen() {
   );
 }
 
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.statBox}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#F8F8FB",
-  },
+  container: { flex: 1, backgroundColor: C.bg, padding: 16 },
 
-  scrollView: {
-    flexGrow: 1,
-    paddingBottom: 100,
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 16,
+    backgroundColor: C.surface,
     borderRadius: 16,
-    marginBottom: 16,
+    padding: 16,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: C.border,
   },
 
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 10,
-  },
-
-  label: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 8,
-  },
-
-  value: {
-    fontSize: 15,
-    fontWeight: "600",
+    marginBottom: 6,
+    color: C.text,
   },
 
   meta: {
     fontSize: 13,
-    color: "#666",
-    marginTop: 4,
+    color: C.muted,
+    marginBottom: 12,
   },
 
-  button: {
-    marginTop: 10,
-    backgroundColor: "#6C5CE7",
-    padding: 12,
-    borderRadius: 10,
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#eef2ff",
+    justifyContent: "center",
     alignItems: "center",
   },
 
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
+  name: { fontSize: 16, fontWeight: "700", color: C.text },
+  email: { fontSize: 13, color: C.muted },
+
+  statsRow: { flexDirection: "row", gap: 10 },
+
+  statBox: {
+    flex: 1,
+    backgroundColor: "#eef2ff",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
   },
 
-  logoutBtn: {
-    marginTop: "auto",
+  statValue: { fontSize: 20, fontWeight: "800", color: C.primary },
+  statLabel: { fontSize: 12, color: C.muted },
+
+  sliderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+
+  sliderLabel: { color: C.text, fontWeight: "600" },
+  sliderValue: { color: C.primary, fontWeight: "700" },
+
+  saveBtn: {
+    marginTop: 10,
+    backgroundColor: C.primary,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#000",
     alignItems: "center",
   },
 
-  logoutText: {
-    color: "#fff",
-    fontWeight: "bold",
+  saveText: { color: "#fff", fontWeight: "700" },
+
+  logoutBtn: {
+    marginTop: 10,
+    marginBottom: 100,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#111",
+    alignItems: "center",
   },
+
+  logoutText: { color: "#fff", fontWeight: "700" },
 });

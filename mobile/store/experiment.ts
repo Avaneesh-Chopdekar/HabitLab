@@ -15,6 +15,7 @@ type Experiment = {
   streak: number;
   missed_days: number;
   difficulty: number;
+  status: "active" | "paused" | "completed";
   baseline: {
     sleep_score: number;
     focus_score: number;

@@ -6,8 +6,10 @@ from .views import (
     DailyCheckinView,
     ExperimentResultView,
     ExperimentTemplatesView,
+    RestartExperimentView,
     StartExperimentView,
     SuggestSubExperimentsView,
+    ToggleExperimentView,
     UserExperimentsView,
 )
 
@@ -19,5 +21,7 @@ urlpatterns = [
     path("baseline/", BaselineView.as_view()),
     path("all/", UserExperimentsView.as_view()),
     path("templates/", ExperimentTemplatesView.as_view()),
+    path("toggle/", ToggleExperimentView.as_view()),
+    path("restart/", RestartExperimentView.as_view()),
     path("suggest/", SuggestSubExperimentsView.as_view()),
 ]

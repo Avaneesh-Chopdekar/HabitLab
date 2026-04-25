@@ -19,7 +19,7 @@ export default function HomeScreen() {
     const res = await restartExperiment();
 
     if (res.ok) {
-      router.replace("/(tabs)"); // refresh home
+      await fetchCurrent();
     } else {
       console.log(res.error);
     }
@@ -118,64 +118,62 @@ export default function HomeScreen() {
       <Text style={{ fontSize: 24, fontWeight: "bold" }}>Your Experiment</Text>
 
       {/* Card */}
-      <Pressable onPress={() => router.push(`/result/${current.id}`)}>
+      <View
+        style={{
+          marginTop: 20,
+          padding: 20,
+          borderRadius: 16,
+          backgroundColor: "#6C5CE7",
+        }}
+      >
+        <Text style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
+          {current.title}
+        </Text>
+
+        <Text style={{ color: "white", marginTop: 5 }}>
+          Day {current.day} / {current.duration}
+        </Text>
+
+        {/* Progress Bar */}
         <View
           style={{
-            marginTop: 20,
-            padding: 20,
-            borderRadius: 16,
-            backgroundColor: "#6C5CE7",
+            height: 8,
+            backgroundColor: "#ffffff40",
+            borderRadius: 10,
+            marginTop: 10,
           }}
         >
-          <Text style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
-            {current.title}
-          </Text>
-
-          <Text style={{ color: "white", marginTop: 5 }}>
-            Day {current.day} / {current.duration}
-          </Text>
-
-          {/* Progress Bar */}
           <View
             style={{
+              width: `${current.progress}%`,
               height: 8,
-              backgroundColor: "#ffffff40",
+              backgroundColor: "white",
               borderRadius: 10,
-              marginTop: 10,
             }}
-          >
-            <View
-              style={{
-                width: `${current.progress}%`,
-                height: 8,
-                backgroundColor: "white",
-                borderRadius: 10,
-              }}
-            />
-          </View>
-
-          {/* Meta */}
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginTop: 15,
-            }}
-          >
-            <Text style={{ color: "white" }}>🔥 Streak: {current.streak}</Text>
-            <Text style={{ color: "white" }}>
-              🎯 Difficulty: {current.difficulty}
-            </Text>
-          </View>
-
-          {/* Missed Warning */}
-          {current.missed_days > 0 && (
-            <Text style={{ color: "#FFD166", marginTop: 10 }}>
-              ⚠️ Missed {current.missed_days} days
-            </Text>
-          )}
+          />
         </View>
-      </Pressable>
+
+        {/* Meta */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 15,
+          }}
+        >
+          <Text style={{ color: "white" }}>🔥 Streak: {current.streak}</Text>
+          <Text style={{ color: "white" }}>
+            🎯 Difficulty: {current.difficulty}
+          </Text>
+        </View>
+
+        {/* Missed Warning */}
+        {current.missed_days > 0 && (
+          <Text style={{ color: "#FFD166", marginTop: 10 }}>
+            ⚠️ Missed {current.missed_days} days
+          </Text>
+        )}
+      </View>
 
       {/* CTA */}
       <Pressable
@@ -210,7 +208,7 @@ export default function HomeScreen() {
             alignItems: "center",
           }}
         >
-          <Text>Pause</Text>
+          <Text>{current.status === "paused" ? "Resume" : "Pause"}</Text>
         </Pressable>
 
         <Pressable
