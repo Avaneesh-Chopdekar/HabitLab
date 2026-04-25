@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +13,8 @@ from .models import (
     DailyCheckin,
     ExperimentResult,
     ExperimentTemplate,
+    SubExperiment,
+    SubExperimentCheckin,
     UserExperiment,
 )
 from .serializers import CheckinSerializer, StartExperimentSerializer
@@ -73,6 +76,15 @@ class StartExperimentView(APIView):
                 "confidence_score": baseline.confidence_score,
             },
         )
+
+        sub_list = serializer.validated_data.get("sub_experiments", [])
+
+        if template:
+            for name in template.sub_experiments:
+                SubExperiment.objects.create(user_experiment=exp, name=name)
+
+        for name in sub_list:
+            SubExperiment.objects.create(user_experiment=exp, name=name)
 
         return Response(api_response(True, {"id": exp.pk}))
 
@@ -137,9 +149,18 @@ class DailyCheckinView(APIView):
         if is_testing():
             print(f"[TEST MODE] Day number: {day_number}")
 
-        DailyCheckin.objects.create(
+        checkin = DailyCheckin.objects.create(
             user_experiment=exp, day_number=day_number, **serializer.validated_data
         )
+
+        sub_scores = request.data.get("sub_scores", [])
+
+        for item in sub_scores:
+            sub = SubExperiment.objects.get(id=item["id"])
+
+            SubExperimentCheckin.objects.create(
+                checkin=checkin, sub_experiment=sub, score=item["score"]
+            )
 
         exp.last_checkin_at = timezone.now()
         exp.save()
@@ -194,6 +215,29 @@ class ExperimentResultView(APIView):
 
         daily_scores = calculate_daily_scores(checkins)
 
+        sub_data = []
+
+        for sub in experiment.sub_experiments.all():
+            avg = (
+                SubExperimentCheckin.objects.filter(
+                    sub_experiment=sub, checkin__user_experiment=experiment
+                ).aggregate(avg=Avg("score"))["avg"]
+                or 0
+            )
+
+            sub_data.append(
+                {
+                    "name": sub.name,
+                    "average": round(avg, 2),
+                }
+            )
+
+        if sub_data:
+            best = max(sub_data, key=lambda x: x["average"])
+            worst = min(sub_data, key=lambda x: x["average"])
+        else:
+            best = worst = None
+
         return Response(
             api_response(
                 True,
@@ -205,6 +249,11 @@ class ExperimentResultView(APIView):
                     "score_before": result.life_score_before,
                     "score_after": result.life_score_after,
                     "daily_scores": daily_scores,
+                    "sub_experiments": sub_data,
+                    "sub_summary": {
+                        "best": best,
+                        "worst": worst,
+                    },
                 },
             )
         )
@@ -226,6 +275,11 @@ class CurrentExperimentView(APIView):
         streak = calculate_streak(exp)
         missed = missed_days_flag(exp)
 
+        sub_experiments = [
+            {"id": s.id, "name": s.name}
+            for s in exp.sub_experiments.all()  # type: ignore
+        ]
+
         return Response(
             api_response(
                 True,
@@ -239,13 +293,32 @@ class CurrentExperimentView(APIView):
                     "streak": streak,
                     "missed_days": missed,
                     "difficulty": exp.difficulty,
+                    "baseline": exp.baseline_snapshot,
+                    "sub_experiments": sub_experiments,
                 },
             )
         )
 
 
-class UpdateBaselineView(APIView):
+class BaselineView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        baseline, _ = Baseline.objects.get_or_create(user=request.user)
+
+        return Response(
+            api_response(
+                True,
+                {
+                    "sleep_score": baseline.sleep_score,
+                    "mood_score": baseline.mood_score,
+                    "focus_score": baseline.focus_score,
+                    "phone_hours": baseline.phone_hours,
+                    "exercise_score": baseline.exercise_score,
+                    "confidence_score": baseline.confidence_score,
+                },
+            )
+        )
 
     def post(self, request):
         baseline, _ = Baseline.objects.get_or_create(user=request.user)
@@ -303,3 +376,45 @@ class UserExperimentsView(APIView):
         ]
 
         return Response(api_response(True, data))
+
+
+class ExperimentTemplatesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        templates = ExperimentTemplate.objects.filter(is_active=True)
+
+        data = [
+            {
+                "id": t.id,
+                "title": t.title,
+                "difficulty": t.difficulty,
+                "duration": t.default_duration,
+            }
+            for t in templates
+        ]
+
+        return Response(api_response(True, data))
+
+
+class SuggestSubExperimentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        title = request.data.get("title", "").lower()
+
+        suggestions = []
+
+        if "interview" in title:
+            suggestions = ["DSA", "System Design", "Projects", "CS Fundamentals"]
+
+        elif "fitness" in title:
+            suggestions = ["Workout", "Steps", "Diet", "Sleep"]
+
+        elif "focus" in title or "deep work" in title:
+            suggestions = ["Deep Work", "No Phone", "Planning", "Review"]
+
+        elif "study" in title:
+            suggestions = ["Reading", "Revision", "Practice", "Notes"]
+
+        return Response(api_response(True, suggestions))

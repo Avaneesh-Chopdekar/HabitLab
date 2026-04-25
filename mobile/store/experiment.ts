@@ -1,5 +1,10 @@
 import { create } from "zustand";
 import { getCurrentExperiment } from "@/api/experiments";
+import {
+  getCachedExperiment,
+  setCachedExperiment,
+  clearCachedExperiment,
+} from "@/utils/experimentCache";
 
 type Experiment = {
   id: number;
@@ -10,6 +15,18 @@ type Experiment = {
   streak: number;
   missed_days: number;
   difficulty: number;
+  baseline: {
+    sleep_score: number;
+    focus_score: number;
+    mood_score: number;
+    phone_hours: number;
+    exercise_score: number;
+    confidence_score: number;
+    steps_avg: number;
+    active_minutes_avg: number;
+    sleep_avg: number;
+  };
+  sub_experiments?: { id: number; name: string }[];
 };
 
 type ExperimentState = {
@@ -17,7 +34,7 @@ type ExperimentState = {
   isLoading: boolean;
   error: string | null;
 
-  setCurrent: (exp: Experiment | null) => void;
+  hydrateFromCache: () => void;
   fetchCurrent: () => Promise<void>;
   clear: () => void;
 };
@@ -27,8 +44,15 @@ export const useExperimentStore = create<ExperimentState>((set) => ({
   isLoading: false,
   error: null,
 
-  setCurrent: (exp) => set({ current: exp }),
+  // ✅ 1. INSTANT LOAD FROM CACHE
+  hydrateFromCache: () => {
+    const cached = getCachedExperiment();
+    if (cached) {
+      set({ current: cached });
+    }
+  },
 
+  // ✅ 2. FETCH + UPDATE CACHE
   fetchCurrent: async () => {
     set({ isLoading: true, error: null });
 
@@ -37,13 +61,20 @@ export const useExperimentStore = create<ExperimentState>((set) => ({
     if (res.ok) {
       if (res.data.active) {
         set({ current: res.data, isLoading: false });
+
+        // 🔥 save to cache
+        setCachedExperiment(res.data);
       } else {
         set({ current: null, isLoading: false });
+        clearCachedExperiment();
       }
     } else {
       set({ error: res.error, isLoading: false });
     }
   },
 
-  clear: () => set({ current: null }),
+  clear: () => {
+    clearCachedExperiment();
+    set({ current: null });
+  },
 }));

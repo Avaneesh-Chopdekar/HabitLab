@@ -1,18 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Pressable, TextInput, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { startExperiment } from "@/api/experiments";
+import {
+  getTemplates,
+  startExperiment,
+  suggestSubExperiments,
+} from "@/api/experiments";
 import { useExperimentStore } from "@/store/experiment";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-
-const TEMPLATES = [
-  { id: 1, title: "No phone 2 hours after waking up", difficulty: 2 },
-  { id: 2, title: "No screens 1 hour before bed", difficulty: 2 },
-  { id: 3, title: "Meditation before bed", difficulty: 1 },
-  { id: 4, title: "4 hour deep work", difficulty: 3 },
-];
 
 const COLORS = {
   accent: "#7C6AF7",
@@ -33,14 +30,45 @@ export default function StartScreen() {
   const [duration, setDuration] = useState(7);
   const [loading, setLoading] = useState(false);
 
+  const [subExperiments, setSubExperiments] = useState<string[]>([]);
+  const [subInput, setSubInput] = useState("");
+
+  const [templates, setTemplates] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const res = await getTemplates();
+      if (res.ok) setTemplates(res.data);
+    })();
+  }, []);
+
+  const addSubExperiment = () => {
+    if (!subInput.trim()) return;
+
+    setSubExperiments((prev) => [...prev, subInput.trim()]);
+    setSubInput("");
+  };
+
+  const removeSubExperiment = (index: number) => {
+    setSubExperiments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleStart = async () => {
+    if (!selectedTemplate && !customTitle.trim()) {
+      alert("Enter title or select template");
+      return;
+    }
     try {
       setLoading(true);
 
       const payload =
         selectedTemplate !== null
           ? { template_id: selectedTemplate }
-          : { title: customTitle, duration_days: duration };
+          : {
+              title: customTitle,
+              duration_days: duration,
+              sub_experiments: subExperiments.length ? subExperiments : [],
+            };
 
       const res = await startExperiment(payload);
       await fetchCurrent();
@@ -77,95 +105,6 @@ export default function StartScreen() {
         Start a new experiment
       </Text>
 
-      {/* Suggested experiments dropdown */}
-      <Pressable
-        onPress={() => setShowTemplates(!showTemplates)}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingVertical: 12,
-          paddingHorizontal: 16,
-          backgroundColor: COLORS.surface,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: COLORS.border,
-          marginBottom: showTemplates ? 12 : 16,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.text }}>
-          Suggested experiments
-        </Text>
-        <Feather
-          name={showTemplates ? "chevron-up" : "chevron-down"}
-          size={20}
-          color={COLORS.accent}
-        />
-      </Pressable>
-
-      {/* Templates List - Conditional */}
-      {showTemplates && (
-        <FlatList
-          data={TEMPLATES}
-          keyExtractor={(item) => item.id.toString()}
-          scrollEnabled={false}
-          renderItem={({ item }) => {
-            const isSelected = selectedTemplate === item.id;
-
-            return (
-              <Pressable
-                onPress={() => {
-                  setSelectedTemplate(item.id);
-                  setCustomTitle("");
-                }}
-                style={{
-                  padding: 14,
-                  borderRadius: 10,
-                  marginBottom: 10,
-                  backgroundColor: isSelected ? COLORS.accent : COLORS.surface,
-                  borderWidth: 1,
-                  borderColor: isSelected ? COLORS.accent : COLORS.border,
-                }}
-              >
-                <Text
-                  style={{
-                    color: isSelected ? "white" : COLORS.text,
-                    fontWeight: "500",
-                    fontSize: 14,
-                  }}
-                >
-                  {item.title}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: isSelected
-                      ? "rgba(255,255,255,0.8)"
-                      : COLORS.textMuted,
-                    marginTop: 4,
-                  }}
-                >
-                  Difficulty: {item.difficulty}/3
-                </Text>
-              </Pressable>
-            );
-          }}
-          style={{ marginBottom: 12 }}
-        />
-      )}
-
-      {/* Custom */}
-      <Text
-        style={{
-          fontSize: 15,
-          fontWeight: "600",
-          color: COLORS.text,
-          marginBottom: 10,
-        }}
-      >
-        Or create your own
-      </Text>
-
       <TextInput
         placeholder="Enter experiment name"
         placeholderTextColor={COLORS.textMuted}
@@ -195,11 +134,11 @@ export default function StartScreen() {
           marginBottom: 10,
         }}
       >
-        Duration
+        Duration in days
       </Text>
 
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
-        {[7, 14, 21].map((d) => (
+        {[7, 14, 21, 60, 90, 180].map((d) => (
           <Pressable
             key={d}
             onPress={() => {
@@ -223,9 +162,94 @@ export default function StartScreen() {
                 fontSize: 14,
               }}
             >
-              {d} days
+              {d}
             </Text>
           </Pressable>
+        ))}
+      </View>
+
+      <Pressable
+        onPress={async () => {
+          if (!customTitle) return;
+
+          const res = await suggestSubExperiments(customTitle);
+
+          if (res.ok) {
+            setSubExperiments(res.data);
+          }
+        }}
+        style={{
+          backgroundColor: "#000",
+          padding: 10,
+          borderRadius: 8,
+          marginBottom: 10,
+        }}
+      >
+        <Text style={{ color: "white" }}>✨ Suggest Sub-Experiments</Text>
+      </Pressable>
+
+      {/* SUB EXPERIMENTS */}
+      <Text
+        style={{
+          fontSize: 15,
+          fontWeight: "600",
+          color: COLORS.text,
+          marginBottom: 10,
+        }}
+      >
+        Sub Experiments (optional)
+      </Text>
+
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+        <TextInput
+          placeholder="e.g. DSA, Gym, Reading"
+          placeholderTextColor={COLORS.textMuted}
+          value={subInput}
+          onChangeText={setSubInput}
+          style={{
+            flex: 1,
+            borderWidth: 1,
+            borderColor: COLORS.border,
+            padding: 12,
+            borderRadius: 10,
+            color: COLORS.text,
+            backgroundColor: COLORS.surface,
+          }}
+        />
+
+        <Pressable
+          onPress={addSubExperiment}
+          style={{
+            paddingHorizontal: 14,
+            justifyContent: "center",
+            borderRadius: 10,
+            backgroundColor: COLORS.accent,
+          }}
+        >
+          <Text style={{ color: "white", fontWeight: "600" }}>Add</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ marginBottom: 16 }}>
+        {subExperiments.map((item, index) => (
+          <View
+            key={index}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 10,
+              borderRadius: 8,
+              backgroundColor: COLORS.accentGlow,
+              marginBottom: 6,
+            }}
+          >
+            <Text style={{ color: COLORS.text }}>{item}</Text>
+
+            <Pressable onPress={() => removeSubExperiment(index)}>
+              <Feather name="x" size={16} color={COLORS.textMuted} />
+            </Pressable>
+          </View>
         ))}
       </View>
 

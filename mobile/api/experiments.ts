@@ -4,15 +4,22 @@ export type StartExperimentPayload = {
   title?: string;
   duration_days?: number;
   template_id?: number;
+  sub_experiments?: string[];
 };
 
 export type CheckinPayload = {
-  sleep_score: number;
+  sleep_score: number | null;
   mood_score: number;
   focus_score: number;
   phone_hours: number;
-  exercise_score: number;
+  exercise_score: number | null;
   confidence: number;
+
+  steps?: number | null;
+  active_minutes?: number | null;
+  avg_heart_rate?: number | null;
+  sleep_hours?: number | null;
+  effort_score?: number | null;
 };
 
 export type UpdateBaselinePayload = {
@@ -117,5 +124,32 @@ export const getAllExperiments = async () => {
     return { ok: true, data: res.data.data };
   } catch {
     return { ok: false, error: "Failed to fetch experiments" };
+  }
+};
+
+export const getTemplates = async () => {
+  try {
+    const res = await api.get("/api/experiments/templates/");
+    return { ok: true, data: res.data.data };
+  } catch {
+    return { ok: false, error: "Failed to fetch templates" };
+  }
+};
+
+export const suggestSubExperiments = async (title: string) => {
+  try {
+    const res = await api.post("/api/experiments/suggest/", { title });
+    return { ok: true, data: res.data.data };
+  } catch {
+    return { ok: false };
+  }
+};
+
+export const getBaseline = async () => {
+  try {
+    const res = await api.get("/api/experiments/baseline/");
+    return { ok: true, data: res.data.data };
+  } catch {
+    return { ok: false, error: "Failed to fetch baseline" };
   }
 };

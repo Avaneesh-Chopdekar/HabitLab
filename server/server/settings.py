@@ -61,6 +61,8 @@ INSTALLED_APPS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
 TESTING_MODE = os.getenv("TESTING_MODE", "False") == "True"
 
 MIDDLEWARE = [

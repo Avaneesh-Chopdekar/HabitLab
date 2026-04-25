@@ -40,11 +40,19 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      ["@react-native-google-signin/google-signin"]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "84942486-f553-422d-b9df-814266508e15"
+      }
+    },
+    "owner": "developer_ac"
   }
 }

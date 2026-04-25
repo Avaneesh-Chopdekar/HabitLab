@@ -3,6 +3,7 @@ import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { restartExperiment, toggleExperiment } from "@/api/experiments";
 import { useExperimentStore } from "@/store/experiment";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -70,7 +71,7 @@ export default function HomeScreen() {
 
   // 🔥 ACTIVE STATE
   return (
-    <View style={{ flex: 1, padding: 20 }}>
+    <SafeAreaView style={{ flex: 1, padding: 20 }}>
       <View
         style={{
           backgroundColor: "#111",
@@ -225,6 +226,6 @@ export default function HomeScreen() {
           <Text style={{ color: "white" }}>Restart</Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

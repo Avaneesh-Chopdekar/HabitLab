@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 import onboardingStyles, { COLORS } from "@/components/onboarding/styles";
 import InputField from "@/components/auth/InputField";
@@ -29,11 +30,7 @@ import {
 import { useAuthStore } from "@/store/auth";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useExperimentStore } from "@/store/experiment";
-import {
-  startExperiment,
-  updateBaseline,
-  getCurrentExperiment,
-} from "@/api/experiments";
+import { startExperiment, updateBaseline } from "@/api/experiments";
 import { getMe } from "@/api/auth";
 
 interface Onboarding5Props {
@@ -49,6 +46,7 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
 
   const { login, register, verifyOtp, resendOtp, isLoading } = useAuthStore();
   const { baseline, experiment, reset } = useOnboardingStore();
+  const { fetchCurrent } = useExperimentStore();
 
   // Forms
   const loginForm = useForm<LoginRequest>({
@@ -228,8 +226,54 @@ export default function Onboarding5({ pagerRef }: Onboarding5Props) {
   };
 
   const handleGoogle = async () => {
-    // Placeholder: integrate Google OAuth (expo-auth-session or native)
-    setServerMessage("Google sign-in not implemented yet.");
+    try {
+      await GoogleSignin.hasPlayServices();
+
+      await GoogleSignin.signOut();
+
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+
+      if (!idToken) throw new Error("No ID token received");
+
+      const res = await useAuthStore.getState().googleLogin({ idToken });
+
+      if (!res.success) {
+        setServerMessage(res.error);
+        return;
+      }
+
+      // ✅ EXACT SAME FLOW AS LOGIN
+      await fetchCurrent();
+
+      const { current } = useExperimentStore.getState();
+      const hasActiveExperiment = !!current;
+
+      if (!hasActiveExperiment && experiment) {
+        await updateBaseline({
+          sleep_score: baseline.sleepQualityScore,
+          focus_score: baseline.focusScore,
+          mood_score: baseline.moodScore,
+          phone_hours: baseline.phoneHours,
+          exercise_score: baseline.exerciseScore,
+          confidence_score: baseline.confidenceScore,
+        });
+
+        await startExperiment({
+          title: experiment,
+          duration_days: 7,
+        });
+
+        await fetchCurrent();
+      }
+
+      // ✅ THIS WAS MISSING
+      pagerRef.current?.setPage(5);
+      reset();
+    } catch (error: any) {
+      console.log("Google Signin Error:", error);
+      setServerMessage(error?.message || "Google sign-in failed");
+    }
   };
 
   // UI pieces

@@ -9,6 +9,10 @@ def calculate_average(checkins):
     def avg(field):
         return sum(getattr(c, field) for c in checkins) / total
 
+    def avg_nullable(field):
+        values = [getattr(c, field) for c in checkins if getattr(c, field) is not None]
+        return sum(values) / len(values) if values else 0
+
     return {
         "sleep_score": avg("sleep_score"),
         "mood_score": avg("mood_score"),
@@ -16,6 +20,9 @@ def calculate_average(checkins):
         "phone_hours": avg("phone_hours"),
         "exercise_score": avg("exercise_score"),
         "confidence_score": avg("confidence"),
+        "steps_avg": avg_nullable("steps"),
+        "active_minutes_avg": avg_nullable("active_minutes"),
+        "sleep_avg": avg_nullable("sleep_hours"),
     }
 
 

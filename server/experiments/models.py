@@ -16,6 +16,10 @@ class Baseline(models.Model):
     exercise_score = models.FloatField(default=0)
     confidence_score = models.FloatField(default=0)
 
+    steps_avg = models.FloatField(default=0)
+    active_minutes_avg = models.FloatField(default=0)
+    sleep_avg = models.FloatField(default=0)
+
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -25,6 +29,7 @@ class ExperimentTemplate(models.Model):
 
     default_duration = models.IntegerField(default=7)
     difficulty = models.IntegerField(default=1)
+    sub_experiments = models.JSONField(default=list)
 
     is_active = models.BooleanField(default=True)
 
@@ -76,7 +81,6 @@ class DailyCheckin(models.Model):
     )
 
     day_number = models.IntegerField()
-
     completed_at = models.DateTimeField(default=timezone.now)
 
     confidence = models.FloatField(default=0)
@@ -86,6 +90,15 @@ class DailyCheckin(models.Model):
     focus_score = models.FloatField()
     phone_hours = models.FloatField()
     exercise_score = models.FloatField()
+
+    # ✅ NEW RAW HEALTH DATA
+    steps = models.IntegerField(null=True, blank=True)
+    active_minutes = models.IntegerField(null=True, blank=True)
+    avg_heart_rate = models.FloatField(null=True, blank=True)
+    sleep_hours = models.FloatField(null=True, blank=True)
+
+    # ✅ NEW META SCORE
+    effort_score = models.FloatField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -101,3 +114,26 @@ class ExperimentResult(models.Model):
     life_score_after = models.JSONField(default=dict)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class SubExperiment(models.Model):
+    user_experiment = models.ForeignKey(
+        UserExperiment, on_delete=models.CASCADE, related_name="sub_experiments"
+    )
+
+    name = models.CharField(max_length=100)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class SubExperimentCheckin(models.Model):
+    checkin = models.ForeignKey(
+        DailyCheckin, on_delete=models.CASCADE, related_name="sub_scores"
+    )
+
+    sub_experiment = models.ForeignKey(SubExperiment, on_delete=models.CASCADE)
+
+    score = models.FloatField(default=0)

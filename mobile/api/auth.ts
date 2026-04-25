@@ -77,21 +77,39 @@ export const resendOtp = async (data: ResendOtpRequest) => {
     return { ok: false, error: err.response.data?.error || "Try again later" };
   }
 };
+
 export const googleLogin = async (data: GoogleLoginRequest) => {
   try {
     const res = await api.post<LoginResponse>("/api/auth/google/", {
       token: data.idToken,
     });
 
-    await saveTokens(res.data.access, res.data.refresh);
+    const { access, refresh } = res.data;
 
-    return { ok: true };
+    // ✅ Save tokens
+    await saveTokens(access, refresh);
+
+    // ✅ Fetch user immediately (important for state)
+    const meRes = await api.get("/api/auth/me/");
+
+    return {
+      ok: true,
+      user: meRes.data,
+    };
   } catch (err: any) {
     if (!err.response) {
       return { ok: false, error: "Network error" };
     }
 
-    return { ok: false, error: "Google login failed" };
+    console.log("Google API error:", err.response?.data);
+
+    return {
+      ok: false,
+      error:
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        "Google login failed",
+    };
   }
 };
 

@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import Slider from "@react-native-community/slider";
-import IBaseline from "../../types/IBaseline";
 import { useOnboardingStore } from "@/store/onboarding";
 
 interface Onboarding3Props {
@@ -10,106 +9,70 @@ interface Onboarding3Props {
 
 export default function Onboarding3({ pagerRef }: Onboarding3Props) {
   const { baseline, setBaseline } = useOnboardingStore();
+
+  // 🎯 indicator logic (same as checkin)
+  const getIndicator = (value: number, reverse = false) => {
+    if (reverse) {
+      if (value <= 3) return { emoji: "🔥", label: "Great" };
+      if (value <= 7) return { emoji: "🙂", label: "Average" };
+      return { emoji: "😞", label: "Bad" };
+    } else {
+      if (value <= 3) return { emoji: "😞", label: "Bad" };
+      if (value <= 7) return { emoji: "🙂", label: "Average" };
+      return { emoji: "🔥", label: "Great" };
+    }
+  };
+
+  const SliderRow = (
+    label: string,
+    key: keyof typeof baseline,
+    color: string,
+    max = 10,
+    reverse = false,
+  ) => {
+    const value = baseline[key] ?? 0;
+    const indicator = getIndicator(value, reverse);
+
+    return (
+      <View style={{ marginBottom: 24, marginHorizontal: 24 }}>
+        <Text style={{ marginBottom: 6, fontWeight: "600" }}>
+          {label} ({value}) {indicator.emoji}
+        </Text>
+
+        <Slider
+          value={value}
+          onValueChange={(v) => setBaseline({ [key]: v })}
+          minimumValue={0}
+          maximumValue={max}
+          step={1}
+          minimumTrackTintColor={color}
+          maximumTrackTintColor="#ddd"
+          thumbTintColor={color}
+        />
+
+        <Text style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+          {indicator.label}
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <>
       <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 32 }}>
         Your current lifestyle
       </Text>
-      <View
-        style={{
-          flexDirection: "column",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          marginTop: 16,
-          gap: 4,
-          width: "100%",
-        }}
-      >
-        <Text style={{ fontSize: 16, color: "gray", marginLeft: 16 }}>
-          Your current sleep quality score ({baseline.sleepQualityScore})
-        </Text>
-        <Slider
-          thumbTintColor="blue"
-          maximumTrackTintColor="blue"
-          minimumTrackTintColor="blue"
-          value={baseline.sleepQualityScore}
-          onValueChange={(value) => setBaseline({ sleepQualityScore: value })}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          style={{ width: "100%", height: 60 }}
-        />
-        <Text style={{ fontSize: 16, color: "gray", marginLeft: 16 }}>
-          Your current focus score ({baseline.focusScore})
-        </Text>
-        <Slider
-          thumbTintColor="hotpink"
-          maximumTrackTintColor="hotpink"
-          minimumTrackTintColor="hotpink"
-          value={baseline.focusScore}
-          onValueChange={(value) => setBaseline({ focusScore: value })}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          style={{ width: "100%", height: 60 }}
-        />
-        <Text style={{ fontSize: 16, color: "gray", marginLeft: 16 }}>
-          Your current mood score ({baseline.moodScore})
-        </Text>
-        <Slider
-          thumbTintColor="orange"
-          maximumTrackTintColor="orange"
-          minimumTrackTintColor="orange"
-          value={baseline.moodScore}
-          onValueChange={(value) => setBaseline({ moodScore: value })}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          style={{ width: "100%", height: 60 }}
-        />
-        <Text style={{ fontSize: 16, color: "gray", marginLeft: 16 }}>
-          Your current screen time in hours ({baseline.phoneHours})
-        </Text>
-        <Slider
-          thumbTintColor="green"
-          maximumTrackTintColor="green"
-          minimumTrackTintColor="green"
-          value={baseline.phoneHours}
-          onValueChange={(value) => setBaseline({ phoneHours: value })}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          style={{ width: "100%", height: 60 }}
-        />
-        <Text style={{ fontSize: 16, color: "teal", marginLeft: 16 }}>
-          Confidence ({baseline.confidenceScore})
-        </Text>
-        <Slider
-          value={baseline.confidenceScore}
-          onValueChange={(v) => setBaseline({ confidenceScore: v })}
-          thumbTintColor="teal"
-          maximumTrackTintColor="teal"
-          minimumTrackTintColor="teal"
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          style={{ width: "100%", height: 60 }}
-        />
-        <Text style={{ fontSize: 16, color: "gray", marginLeft: 16 }}>
-          Your current exercise score ({baseline.exerciseScore})
-        </Text>
-        <Slider
-          thumbTintColor="rebeccapurple"
-          maximumTrackTintColor="rebeccapurple"
-          minimumTrackTintColor="rebeccapurple"
-          value={baseline.exerciseScore}
-          onValueChange={(value) => setBaseline({ exerciseScore: value })}
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          style={{ width: "100%", height: 60 }}
-        />
+
+      <View style={{ width: "100%" }}>
+        {SliderRow("Sleep Quality", "sleepQualityScore", "#6C5CE7")}
+        {SliderRow("Focus", "focusScore", "#00B894")}
+        {SliderRow("Mood", "moodScore", "#FDCB6E")}
+        {SliderRow("Screen Time (hrs)", "phoneHours", "#E17055", 12, true)}
+        {SliderRow("Exercise", "exerciseScore", "#0984E3")}
+        {SliderRow("Confidence", "confidenceScore", "#FFD700")}
       </View>
+
+      {/* NAV BUTTONS */}
       <View
         style={{
           flexDirection: "row",
@@ -125,14 +88,12 @@ export default function Onboarding3({ pagerRef }: Onboarding3Props) {
             paddingHorizontal: 16,
             paddingVertical: 12,
             width: 120,
-            justifyContent: "center",
             alignItems: "center",
-            borderWidth: 2,
-            borderColor: "white",
           }}
         >
           <Text style={{ color: "white" }}>Back</Text>
         </Pressable>
+
         <Pressable
           onPress={() => pagerRef.current?.setPage(3)}
           style={{
@@ -141,10 +102,7 @@ export default function Onboarding3({ pagerRef }: Onboarding3Props) {
             paddingHorizontal: 16,
             paddingVertical: 12,
             width: 120,
-            justifyContent: "center",
             alignItems: "center",
-            borderWidth: 2,
-            borderColor: "white",
           }}
         >
           <Text style={{ color: "white" }}>Next</Text>

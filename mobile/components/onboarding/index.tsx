@@ -25,7 +25,7 @@ export default function Onboarding() {
         <Onboarding4 pagerRef={pagerRef} />
       </View>
       <View key="5" style={styles.page}>
-        <Onboarding5 pagerRef={pagerRef} /> {/* Authentication */}
+        <Onboarding5 pagerRef={pagerRef} />
       </View>
     </PagerView>
   );

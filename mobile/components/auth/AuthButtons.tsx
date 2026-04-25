@@ -2,6 +2,7 @@ import React from "react";
 import {
   View,
   Text,
+  Image,
   Pressable,
   ActivityIndicator,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import onboardingStyles, { COLORS } from "../onboarding/styles";
+import GoogleIcon from "../../assets/images/google.svg";
 
 type AuthButtonsProps = {
   // Primary action (Sign In / Create Account / Verify)
@@ -52,7 +54,8 @@ export default function AuthButtons({
         style={({ pressed }) => [
           onboardingStyles.primaryButton,
           pressed && onboardingStyles.primaryButtonPressed,
-          (primaryDisabled || primaryLoading) && onboardingStyles.primaryButtonDisabled,
+          (primaryDisabled || primaryLoading) &&
+            onboardingStyles.primaryButtonDisabled,
           styles.primaryWrapper,
         ]}
         onPress={onPrimaryPress}
@@ -85,19 +88,16 @@ export default function AuthButtons({
         onPress={onSecondaryPress}
         disabled={secondaryDisabled || !onSecondaryPress}
         accessibilityRole="button"
-        accessibilityState={{ disabled: secondaryDisabled || !onSecondaryPress }}
+        accessibilityState={{
+          disabled: secondaryDisabled || !onSecondaryPress,
+        }}
       >
         {/* Icon */}
-        {secondaryIconName ? (
-          <MaterialIcons
-            name={secondaryIconName}
-            size={20}
-            color={COLORS.primary}
-            style={{ marginRight: 8 }}
-          />
-        ) : null}
+        {secondaryIconName ? <GoogleIcon width={20} height={20} /> : null}
 
-        <Text style={onboardingStyles.secondaryButtonText}>{secondaryLabel}</Text>
+        <Text style={onboardingStyles.secondaryButtonText}>
+          {secondaryLabel}
+        </Text>
       </Pressable>
     </View>
   );
