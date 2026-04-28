@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from experiments.llm import generate_summary, suggest_sub_experiments
+
 from .helper import api_response, is_testing
 from .models import (
     Baseline,
@@ -23,7 +25,6 @@ from .utils import (
     calculate_daily_scores,
     calculate_life_scores,
     calculate_streak,
-    generate_summary,
     missed_days_flag,
 )
 
@@ -172,7 +173,7 @@ class DailyCheckinView(APIView):
             life_before = calculate_life_scores(baseline)
             life_after = calculate_life_scores(final_avg)
 
-            summary = generate_summary(baseline, final_avg)
+            summary = generate_summary(baseline=baseline, final=final_avg)
 
             ExperimentResult.objects.create(
                 user_experiment=exp,
@@ -289,6 +290,7 @@ class CurrentExperimentView(APIView):
                     "duration": exp.duration_days,
                     "progress": progress,
                     "streak": streak,
+                    "last_checkin": exp.last_checkin_at,
                     "missed_days": missed,
                     "difficulty": exp.difficulty,
                     "baseline": exp.baseline_snapshot,
@@ -390,7 +392,7 @@ class ExperimentTemplatesView(APIView):
 
         data = [
             {
-                "id": t.id,
+                "id": t.pk,
                 "title": t.title,
                 "difficulty": t.difficulty,
                 "duration": t.default_duration,
@@ -407,18 +409,6 @@ class SuggestSubExperimentsView(APIView):
     def post(self, request):
         title = request.data.get("title", "").lower()
 
-        suggestions = []
-
-        if "interview" in title:
-            suggestions = ["DSA", "System Design", "Projects", "CS Fundamentals"]
-
-        elif "fitness" in title:
-            suggestions = ["Workout", "Steps", "Diet", "Sleep"]
-
-        elif "focus" in title or "deep work" in title:
-            suggestions = ["Deep Work", "No Phone", "Planning", "Review"]
-
-        elif "study" in title:
-            suggestions = ["Reading", "Revision", "Practice", "Notes"]
+        suggestions = suggest_sub_experiments(title)
 
         return Response(api_response(True, suggestions))

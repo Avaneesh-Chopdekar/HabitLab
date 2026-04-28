@@ -26,6 +26,7 @@ import {
 import SourceToggle from "@/components/SourceToggle";
 import { router } from "expo-router";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import NotificationSettings from "@/components/NotificationSettings";
 
 const C = {
   primary: "#6366f1",
@@ -109,7 +110,18 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 👤 PROFILE */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              borderTopEndRadius: 12,
+              borderTopStartRadius: 12,
+              borderBottomEndRadius: 0,
+              borderBottomStartRadius: 0,
+              marginBottom: 0,
+            },
+          ]}
+        >
           <View style={styles.row}>
             <View style={styles.avatar}>
               <Feather name="user" size={22} color={C.primary} />
@@ -120,6 +132,10 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+        {/* 🚪 LOGOUT */}
+        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </Pressable>
 
         {/* 📊 STATS */}
         <View style={styles.card}>
@@ -179,18 +195,15 @@ export default function ProfileScreen() {
           />
         </View>
 
+        <NotificationSettings />
+
         {/* 🧠 AI */}
-        <Pressable style={styles.card} onPress={() => router.push("/ai-coach")}>
+        {/*<Pressable style={styles.card} onPress={() => router.push("/ai-coach")}>
           <Text style={styles.sectionTitle}>🧠 AI Coach</Text>
           <Text style={styles.meta}>
             Get smart suggestions to improve your habits →
           </Text>
-        </Pressable>
-
-        {/* 🚪 LOGOUT */}
-        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </Pressable>
+        </Pressable>*/}
       </ScrollView>
     </SafeAreaView>
   );
@@ -279,11 +292,11 @@ const styles = StyleSheet.create({
   saveText: { color: "#fff", fontWeight: "700" },
 
   logoutBtn: {
-    marginTop: 10,
-    marginBottom: 100,
+    marginBottom: 16,
     padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#111",
+    borderBottomStartRadius: 12,
+    borderBottomEndRadius: 12,
+    backgroundColor: "#000",
     alignItems: "center",
   },
 

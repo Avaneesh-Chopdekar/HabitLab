@@ -7,6 +7,7 @@ import { useExperimentStore } from "@/store/experiment";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useHealthStore } from "@/store/health";
 import { getCachedHealthData, setCachedHealthData } from "@/utils/healthCache";
+import { cancelTwoHourWarningToday } from "@/services/notifications";
 
 // 🔥 HEALTH IMPORTS
 import {
@@ -259,6 +260,7 @@ export default function CheckinScreen() {
 
       if (res.ok) {
         Alert.alert("Success", "Check-in saved 🎉");
+        await cancelTwoHourWarningToday();
         await fetchCurrent();
         router.replace("/(tabs)");
       } else {

@@ -1,11 +1,16 @@
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useAuthStore } from "../store/auth";
 import * as SplashScreen from "expo-splash-screen";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { initialize, getSdkStatus } from "react-native-health-connect";
 import { useExperimentStore } from "@/store/experiment";
+import {
+  setupAllNotifications,
+  useNotificationNavigation,
+  maybeSendMissedCheckinNotification,
+} from "@/services/notifications";
 
 // TODO: Implement notifications for reminders and alerts
 
@@ -17,6 +22,18 @@ export default function RootLayout() {
 
   const hydrateExperiment = useExperimentStore((s) => s.hydrateFromCache);
   const fetchCurrent = useExperimentStore((s) => s.fetchCurrent);
+
+  useNotificationNavigation(router);
+
+  useEffect(() => {
+    if (isHydrated) {
+      setupAllNotifications();
+      // Check if user missed yesterday's checkin
+      const lastCheckin =
+        useExperimentStore.getState().current?.last_checkin_at;
+      maybeSendMissedCheckinNotification(lastCheckin ?? null);
+    }
+  }, [isHydrated]);
 
   const initHealth = async () => {
     try {

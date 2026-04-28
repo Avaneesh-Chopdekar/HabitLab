@@ -56,7 +56,10 @@ class GoogleLogin(APIView):
 
         # Case 3: New user
         user = User.objects.create(
-            email=email, username=email.split("@")[0], google_sub=google_sub
+            email=email,
+            username=email.split("@")[0],
+            google_sub=google_sub,
+            is_verified=True,
         )
 
         return issue_jwt(user)
@@ -67,10 +70,13 @@ class VerifyOTP(APIView):
         email = request.data["email"]
         code = request.data["otp"]
 
-        user = User.objects.get(email=email)
-        otp = EmailOTP.objects.filter(user=user, code=code).first()
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "User not found"}, status=404)
 
-        if not otp:
+        otp = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
+
+        if not otp or otp.code != code:
             return Response({"error": "Invalid OTP"}, status=400)
 
         if otp.is_expired():
@@ -100,7 +106,9 @@ class VerifyOTP(APIView):
 class ResendOTP(APIView):
     def post(self, request):
         email = request.data["email"]
-        user = User.objects.get(email=email)
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "User not found"}, status=404)
 
         last = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
 

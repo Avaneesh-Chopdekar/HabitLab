@@ -30,7 +30,14 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f8f9ff",
+        }}
+      >
         <ActivityIndicator />
       </View>
     );
@@ -45,6 +52,7 @@ export default function HomeScreen() {
           justifyContent: "center",
           alignItems: "center",
           padding: 20,
+          backgroundColor: "#f8f9ff",
         }}
       >
         <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 10 }}>
@@ -71,7 +79,7 @@ export default function HomeScreen() {
 
   // 🔥 ACTIVE STATE
   return (
-    <SafeAreaView style={{ flex: 1, padding: 20 }}>
+    <SafeAreaView style={{ flex: 1, padding: 20, backgroundColor: "#f8f9ff" }}>
       <View
         style={{
           backgroundColor: "#111",

@@ -12,6 +12,7 @@ dependencies = [
     "djangorestframework-stubs>=3.16.6",
     "drf-yasg>=1.21.11",
     "google-auth>=2.47.0",
+    "groq>=1.2.0",
     "psycopg>=3.3.2",
     "python-dotenv>=1.2.1",
 ]

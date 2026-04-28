@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.utils import timezone
 
 
@@ -24,45 +22,6 @@ def calculate_average(checkins):
         "active_minutes_avg": avg_nullable("active_minutes"),
         "sleep_avg": avg_nullable("sleep_hours"),
     }
-
-
-def generate_summary(baseline, final):
-    improvements = []
-
-    def diff(key):
-        return round(final[key] - baseline[key], 2)
-
-    # Positive metrics
-    if diff("sleep_score") > 1:
-        improvements.append("Your sleep quality improved significantly.")
-    elif diff("sleep_score") > 0:
-        improvements.append("Your sleep quality improved slightly.")
-
-    if diff("focus_score") > 1:
-        improvements.append("You became much more focused.")
-    elif diff("focus_score") > 0:
-        improvements.append("Your focus improved.")
-
-    if diff("mood_score") > 1:
-        improvements.append("Your mood improved a lot.")
-    elif diff("mood_score") > 0:
-        improvements.append("Your mood improved.")
-
-    if diff("exercise_score") > 1:
-        improvements.append("You became more active physically.")
-    elif diff("exercise_score") > 0:
-        improvements.append("Your activity level improved.")
-
-    # Negative metric (phone)
-    if diff("phone_hours") < -1:
-        improvements.append("You reduced screen time significantly.")
-    elif diff("phone_hours") < 0:
-        improvements.append("You reduced screen time.")
-
-    if not improvements:
-        return "Your performance stayed consistent. Try adjusting your experiment for better results."
-
-    return "\n".join(f"• {i}" for i in improvements)
 
 
 def calculate_streak(exp):
