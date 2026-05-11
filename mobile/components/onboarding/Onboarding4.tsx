@@ -25,65 +25,63 @@ export default function Onboarding4({ pagerRef }: Onboarding4Props) {
         }}
       >
         <BouncyCheckbox
-          text="No phone 2 hours after waking up"
+          text="Drink 2L water"
           fillColor="blue"
           textStyle={{
             textDecorationLine: "none",
           }}
-          isChecked={experiment === "No phone 2 hours after waking up"}
-          onPress={(isChecked) =>
-            setExperiment("No phone 2 hours after waking up")
-          }
+          isChecked={experiment === "Drink 2L water"}
+          onPress={(isChecked) => setExperiment("Drink 2L water")}
         />
 
         <BouncyCheckbox
-          text="No screens 1 hour before bed"
+          text="2 hours deep work"
           fillColor="hotpink"
           textStyle={{
             textDecorationLine: "none",
           }}
-          isChecked={experiment === "No screens 1 hour before bed"}
-          onPress={(isChecked) => setExperiment("No screens 1 hour before bed")}
+          isChecked={experiment === "2 hours deep work"}
+          onPress={(isChecked) => setExperiment("2 hours deep work")}
         />
 
         <BouncyCheckbox
-          text="No coffee after noon"
+          text="No phone 30 min after waking"
           fillColor="orange"
           textStyle={{
             textDecorationLine: "none",
           }}
-          isChecked={experiment === "No coffee after noon"}
-          onPress={(isChecked) => setExperiment("No coffee after noon")}
+          isChecked={experiment === "No phone 30 min after waking"}
+          onPress={(isChecked) => setExperiment("No phone 30 min after waking")}
         />
 
         <BouncyCheckbox
-          text="Meditation before bed"
+          text="45 min workout"
           fillColor="green"
           textStyle={{
             textDecorationLine: "none",
           }}
-          isChecked={experiment === "Meditation before bed"}
-          onPress={(isChecked) => setExperiment("Meditation before bed")}
+          isChecked={experiment === "45 min workout"}
+          onPress={(isChecked) => setExperiment("45 min workout")}
         />
 
         <BouncyCheckbox
-          text="4 hour deep work"
+          text="Daily journaling"
           fillColor="rebeccapurple"
           textStyle={{
             textDecorationLine: "none",
           }}
-          isChecked={experiment === "4 hour deep work"}
-          onPress={(isChecked) => setExperiment("4 hour deep work")}
+          isChecked={experiment === "Daily journaling"}
+          onPress={(isChecked) => setExperiment("Daily journaling")}
         />
 
         <BouncyCheckbox
-          text="No outdoor food"
+          text="No sugar for the day"
           fillColor="red"
           textStyle={{
             textDecorationLine: "none",
           }}
-          isChecked={experiment === "No outdoor food"}
-          onPress={(isChecked) => setExperiment("No outdoor food")}
+          isChecked={experiment === "No sugar for the day"}
+          onPress={(isChecked) => setExperiment("No sugar for the day")}
         />
 
         {/*<BouncyCheckbox

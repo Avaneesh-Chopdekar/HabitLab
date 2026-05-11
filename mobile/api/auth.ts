@@ -1,7 +1,6 @@
 import api from ".";
 import { saveTokens } from "../utils/token";
 import {
-  RegisterResponse,
   LoginRequest,
   RegisterRequest,
   LoginResponse,
@@ -86,10 +85,8 @@ export const googleLogin = async (data: GoogleLoginRequest) => {
 
     const { access, refresh } = res.data;
 
-    // ✅ Save tokens
     await saveTokens(access, refresh);
 
-    // ✅ Fetch user immediately (important for state)
     const meRes = await api.get("/api/auth/me/");
 
     return {

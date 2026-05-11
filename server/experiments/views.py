@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from django.db.models import Avg
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

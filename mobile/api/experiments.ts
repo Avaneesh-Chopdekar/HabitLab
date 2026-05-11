@@ -31,7 +31,6 @@ export type UpdateBaselinePayload = {
   confidence_score?: number;
 };
 
-// 🚀 Start Experiment
 export const startExperiment = async (data: StartExperimentPayload) => {
   try {
     const res = await api.post("/api/experiments/start/", data);
@@ -44,7 +43,6 @@ export const startExperiment = async (data: StartExperimentPayload) => {
   }
 };
 
-// 📊 Get current experiment
 export const getCurrentExperiment = async () => {
   try {
     const res = await api.get("/api/experiments/current/");
@@ -54,7 +52,6 @@ export const getCurrentExperiment = async () => {
   }
 };
 
-// ✅ Daily checkin
 export const dailyCheckin = async (data: CheckinPayload) => {
   try {
     const res = await api.post("/api/experiments/checkin/", data);
@@ -67,7 +64,6 @@ export const dailyCheckin = async (data: CheckinPayload) => {
   }
 };
 
-// 📈 Get result
 export const getExperimentResult = async (expId: number) => {
   try {
     const res = await api.get(`/api/experiments/result/${expId}/`);
@@ -80,7 +76,6 @@ export const getExperimentResult = async (expId: number) => {
   }
 };
 
-// ⏯ Pause / Resume
 export const toggleExperiment = async () => {
   try {
     const res = await api.post("/api/experiments/toggle/");

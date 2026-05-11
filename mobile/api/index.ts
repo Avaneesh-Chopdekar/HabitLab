@@ -10,7 +10,6 @@ const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
 });
 
-// 🔥 GLOBAL STATE (important)
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
@@ -40,14 +39,12 @@ api.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config;
 
-    // ❗ Prevent infinite loop
     if (err.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(err);
     }
 
     originalRequest._retry = true;
 
-    // 🔥 If already refreshing → queue request
     if (isRefreshing) {
       return new Promise((resolve) => {
         subscribeTokenRefresh((token: string) => {
@@ -57,7 +54,6 @@ api.interceptors.response.use(
       });
     }
 
-    // 🔥 Start refresh flow
     isRefreshing = true;
 
     try {
@@ -76,7 +72,6 @@ api.interceptors.response.use(
 
       await saveTokens(newAccess, refresh);
 
-      // 🔥 Notify all queued requests
       onRefreshed(newAccess);
 
       // Retry original request
@@ -84,8 +79,6 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (error) {
       await clearTokens();
-
-      // Optional: you can trigger logout globally here
 
       return Promise.reject(error);
     } finally {

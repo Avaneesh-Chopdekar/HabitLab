@@ -78,6 +78,7 @@ export default function Onboarding3({ pagerRef }: Onboarding3Props) {
           flexDirection: "row",
           justifyContent: "space-between",
           marginTop: "auto",
+          gap: 4,
         }}
       >
         <Pressable

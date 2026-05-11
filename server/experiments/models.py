@@ -91,13 +91,11 @@ class DailyCheckin(models.Model):
     phone_hours = models.FloatField()
     exercise_score = models.FloatField()
 
-    # ✅ NEW RAW HEALTH DATA
     steps = models.IntegerField(null=True, blank=True)
     active_minutes = models.IntegerField(null=True, blank=True)
     avg_heart_rate = models.FloatField(null=True, blank=True)
     sleep_hours = models.FloatField(null=True, blank=True)
 
-    # ✅ NEW META SCORE
     effort_score = models.FloatField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
